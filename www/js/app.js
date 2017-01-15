@@ -1,92 +1,38 @@
-// Ionic Starter App
+angular.module("facebookApp", ["ionic", "ngCordova"]).controller("mainCtrl", ["$scope", "$cordovaOauth", "$http", function($scope, $cordovaOauth, $http) {
+    window.cordovaOauth = $cordovaOauth;
+    window.http = $http;
+}]);
 
-// angular.module is a global place for creating, registering and retrieving Angular modules
-// 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
-// the 2nd parameter is an array of 'requires'
-var facebookExample = angular.module('starter', ['ionic', 'ngStorage', 'ngCordova'])
+function login()
+{
+    facebookLogin(window.cordovaOauth, window.http);
+}
 
-facebookExample.run(function($ionicPlatform) {
-    $ionicPlatform.ready(function() {
-        // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
-        // for form inputs)
-        if(window.cordova && window.cordova.plugins.Keyboard) {
-            cordova.plugins.Keyboard.hideKeyboardAccessoryBar(true);
-        }
-        if(window.StatusBar) {
-            StatusBar.styleDefault();
-        }
+function facebookLogin($cordovaOauth, $http)
+{
+    $cordovaOauth.facebook("1221884961227558", ["email", "public_profile"], {redirect_uri: "http://localhost/callback"}).then(function(result){
+        displayData($http, result.access_token);
+    },  function(error){
+            alert("Error: " + error);
     });
-});
+}
+function displayData($http, access_token)
+{
+    $http.get("https://graph.facebook.com/v2.2/me", {params: {access_token: access_token, fields: "name,gender,location,picture", format: "json" }}).then(function(result) {
+        var name = result.data.name;
+        var gender = result.data.gender;
+        var picture = result.data.picture;
 
-facebookExample.config(function($stateProvider, $urlRouterProvider) {
-    $stateProvider
-        .state('login', {
-            url: '/login',
-            templateUrl: 'templates/login.html',
-            controller: 'LoginController'
-        })
-        .state('profile', {
-            url: '/profile',
-            templateUrl: 'templates/profile.html',
-            controller: 'ProfileController'
-        })
-        .state('feed', {
-            url: '/feed',
-            templateUrl: 'templates/feed.html',
-            controller: 'FeedController'
-        });
-    $urlRouterProvider.otherwise('/login');
-});
+        var html = '<table id="table" data-role="table" data-mode="column" class="ui-responsive"><thead><tr><th>Field</th><th>Info</th></tr></thead><tbody>';
+        html = html + "<tr><td>" + "Name" + "</td><td>" + name + "</td></tr>";
+        html = html + "<tr><td>" + "Gender" + "</td><td>" + gender + "</td></tr>";
+        html = html + "<tr><td>" + "Picture" + "</td><td><img src='" + picture.data.url + "' /></td></tr>";
 
-facebookExample.controller("LoginController", function($scope, $cordovaOauth, $localStorage, $location) {
+        html = html + "</tbody></table>";
 
-    $scope.login = function() {
-        $cordovaOauth.facebook("1221884961227558", ["email", "read_stream", "user_website", "user_location", "user_relationships"]).then(function(result) {
-            $localStorage.accessToken = result.access_token;
-            $location.path("/profile");
-        }, function(error) {
-            alert("There was a problem signing in!  See the console for logs");
-            console.log(error);
-        });
-    };
-
-});
-
-facebookExample.controller("ProfileController", function($scope, $http, $localStorage, $location) {
-
-    $scope.init = function() {
-        if($localStorage.hasOwnProperty("accessToken") === true) {
-            $http.get("https://graph.facebook.com/v2.2/me", { params: { access_token: $localStorage.accessToken, fields: "id,name,gender,location,website,picture,relationship_status", format: "json" }}).then(function(result) {
-                $scope.profileData = result.data;
-            }, function(error) {
-                alert("There was a problem getting your profile.  Check the logs for details.");
-                console.log(error);
-            });
-        } else {
-            alert("Not signed in");
-            $location.path("/login");
-        }
-    };
-
-});
-
-facebookExample.controller("FeedController", function($scope, $http, $localStorage, $location) {
-
-    $scope.init = function() {
-        if($localStorage.hasOwnProperty("accessToken") === true) {
-            $http.get("https://graph.facebook.com/v2.2/me/feed", { params: { access_token: $localStorage.accessToken, format: "json" }}).then(function(result) {
-                $scope.feedData = result.data.data;
-                $http.get("https://graph.facebook.com/v2.2/me", { params: { access_token: $localStorage.accessToken, fields: "picture", format: "json" }}).then(function(result) {
-                    $scope.feedData.myPicture = result.data.picture.data.url;
-                });
-            }, function(error) {
-                alert("There was a problem getting your profile.  Check the logs for details.");
-                console.log(error);
-            });
-        } else {
-            alert("Not signed in");
-            $location.path("/login");
-        }
-    };
-
-});
+        document.getElementById("listTable").innerHTML = html;
+        $.mobile.changePage($("#profile"), "slide", true, true);
+    }, function(error) {
+        alert("Error: " + error);
+    });
+}
