@@ -10,7 +10,7 @@ function login()
 
 function facebookLogin($cordovaOauth, $http)
 {
-    $cordovaOauth.facebook("1221884961227558", ["email", "public_profile"], {redirect_uri: "http://localhost/callback"}).then(function(result){
+    $cordovaOauth.facebook("1633195863589792", ["email", "public_profile"], {redirect_uri: "http://localhost/callback"}).then(function(result){
         displayData($http, result.access_token);
     },  function(error){
             alert("Error: " + error);
